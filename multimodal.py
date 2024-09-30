@@ -153,8 +153,76 @@ class AudioAgent:
             return f"Error processing audio: {e}"
 
 
-# Memory classes remain the same from previous version
+class ShortTermMemory:
+    def __init__(self, max_cache_size=50):
+        """
+        Initializes short-term memory with a maximum cache size. Memory will hold recent data
+        only for the current session.
+        """
+        self.memory = {}
+        self.max_cache_size = max_cache_size
 
+    def store_context(self, input_text, context):
+        """
+        Stores context in short-term memory. If the memory exceeds the cache limit, the oldest entries are removed.
+        """
+        if len(self.memory) >= self.max_cache_size:
+            oldest_key = next(iter(self.memory))
+            self.memory.pop(oldest_key)  # Remove the oldest memory to prevent overflow
+        self.memory[input_text] = context
+        logging.info(f"Stored context in short-term memory for '{input_text}'")
+
+    def retrieve_context(self, input_text):
+        """
+        Retrieves context from short-term memory. Returns None if not found.
+        """
+        return self.memory.get(input_text, None)
+
+
+class LongTermMemory:
+    def __init__(self, file_path):
+        """
+        Initializes long-term memory by loading data from a JSON file. If the file doesn't exist,
+        a new memory file is created.
+        """
+        self.file_path = file_path
+        self.memory = self._load_memory()
+
+    def _load_memory(self):
+        """
+        Loads long-term memory from a JSON file. If the file doesn't exist, an empty memory is created.
+        """
+        if os.path.exists(self.file_path):
+            with open(self.file_path, 'r') as file:
+                logging.info("Loaded long-term memory from file.")
+                return json.load(file)
+        logging.warning("No long-term memory file found. Initializing empty memory.")
+        return {}
+
+    def _save_memory(self):
+        """
+        Saves the current long-term memory to the JSON file.
+        """
+        with open(self.file_path, 'w') as file:
+            json.dump(self.memory, file)
+        logging.info("Saved long-term memory to file.")
+
+    def store_experience(self, key, experience):
+        """
+        Stores a new experience in long-term memory and saves it to the file.
+        """
+        self.memory[key] = experience
+        self._save_memory()
+
+    def retrieve_experience(self, key):
+        """
+        Retrieves an experience from long-term memory.
+        """
+        return self.memory.get(key, None)
+
+# Example of initializing and using the memory classes
+# short_term_memory = ShortTermMemory(max_cache_size=50)
+# long_term_memory = LongTermMemory("long_term_memory.json")
 
 # Example usage of multi-modal input handling system with improved agents
 
